@@ -11,3 +11,6 @@ def home(request):
         'post': posts
     }
     return render(request, 'home.html', context)
+
+def about(request):
+    return render(request, 'about.html')
