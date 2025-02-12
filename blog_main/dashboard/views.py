@@ -1,7 +1,9 @@
 from django.shortcuts import get_object_or_404, redirect, render
-from .form import CategoryForm, PostForm
+from .form import CategoryForm, PostForm, UserForm, EditUserForm
 from blogs.models import Category, Blog
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import User
+from django.template.defaultfilters import slugify
 
 # Create your views here.
 @login_required(login_url='login')
@@ -71,6 +73,9 @@ def add_post(request):
             post=form.save(commit=False) # creates an object and the form is saved inside the object
             post.author = request.user # the object can is now accessible
             post.save()
+            title = form.cleaned_data['title']
+            post.slug = slugify(title) + '-' + str(post.id)
+            post.save()
             return redirect('posts') 
     form = PostForm()
     context={
@@ -100,3 +105,41 @@ def delete_post(request, pk):
     blog.delete()
     return redirect('posts')
 
+
+def user(request):
+    user = User.objects.all()
+    context = {
+        'user':user,
+    }
+    return render(request, 'dashboard/user.html',context)
+
+def add_user(request):
+    if request.method == 'POST':
+        form = UserForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('user') 
+    form = UserForm()
+    context={
+        'Form' : form,
+    }
+    return render(request, 'dashboard/add_user.html', context)
+
+def edit_user(request, pk):
+    user = User.objects.get(pk=pk)  
+    if request.method == 'POST':
+        form = EditUserForm(request.POST,instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('user')
+    form = EditUserForm(instance=user)
+    context = {
+        'Form': form,
+        'user': user,
+    }
+    return render(request, 'dashboard/edit_user.html', context)
+    
+def delete_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    user.delete()
+    return redirect('user')
